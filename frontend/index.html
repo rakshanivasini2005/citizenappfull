@@ -1,0 +1,317 @@
+<!-- 
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SafeNet</title>
+
+<link rel="stylesheet" href="css/styles.css">
+
+</head>
+<body>
+
+<div class="app-container">
+
+<header class="header">
+<div class="title">SafeNet</div>
+
+<div id="network-badge" class="network-badge">
+<div class="status-dot"></div>
+<span id="network-text">Online</span>
+</div>
+
+</header>
+
+
+<main class="view-container">
+
+<div id="layer-sos" class="view-layer active">
+
+<div class="sos-wrapper">
+<div class="pulse-ring"></div>
+<div class="pulse-ring"></div>
+
+<button id="btn-trigger-sos" class="sos-btn">
+SOS
+</button>
+
+</div>
+
+</div>
+
+
+
+<div id="layer-form" class="view-layer">
+
+<div class="form-panel">
+
+<div class="prompt-text">
+Select Emergency Type
+</div>
+
+<div class="emergency-types">
+
+<button class="type-btn" data-type="Medical">
+⚕️ Medical
+</button>
+
+<button class="type-btn" data-type="Fire">
+🔥 Fire
+</button>
+
+<button class="type-btn" data-type="Accident">
+🚗 Accident
+</button>
+
+<button class="type-btn" data-type="Crime">
+🛡️ Crime
+</button>
+
+</div>
+
+<div class="photo-section" style="margin: 15px 0;">
+    <label for="incident-photo" class="photo-btn" style="display: block; padding: 12px; background: rgba(255,255,255,0.1); border: 1px dashed rgba(255,255,255,0.4); border-radius: 8px; color: white; cursor: pointer; text-align: center;">
+        📷 Take Photo of Incident
+    </label>
+    <input type="file" id="incident-photo" accept="image/*" capture="environment" style="display: none;">
+    
+    <div id="photo-preview-container" style="display: none; margin-top: 10px; position: relative;">
+        <img id="photo-preview" style="max-width: 100%; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2);" />
+        <button id="btn-remove-photo" style="position: absolute; top: 5px; right: 5px; background: #ff3b30; color: white; border: none; border-radius: 50%; width: 25px; height: 25px; cursor: pointer;">✕</button>
+    </div>
+</div>
+<textarea
+id="incident-desc"
+class="textarea-glass"
+placeholder="Add emergency details..."
+></textarea>
+
+<button id="btn-dispatch" class="dispatch-btn">
+Dispatch Alert
+</button>
+
+</div>
+
+<button id="btn-cancel" class="cancel-btn">
+Cancel
+</button>
+
+</div>
+
+
+
+<div id="layer-details" class="view-layer">
+
+<div class="info-panel">
+
+<div class="status-header">
+
+<div id="loading-spinner" class="spinner"></div>
+
+<span id="status-title">
+Acquiring Location...
+</span>
+
+</div>
+
+<div class="data-row">
+<span class="data-label">Emergency</span>
+<span id="val-type" class="data-value">--</span>
+</div>
+
+<div class="data-row">
+<span class="data-label">Timestamp</span>
+<span id="val-time" class="data-value">--</span>
+</div>
+
+<div class="data-row">
+<span class="data-label">Latitude</span>
+<span id="val-lat" class="data-value">--</span>
+</div>
+
+<div class="data-row">
+<span class="data-label">Longitude</span>
+<span id="val-lng" class="data-value">--</span>
+</div>
+
+<div id="offline-warning" class="offline-warning">
+Network offline. Alert saved locally.
+</div>
+
+<button id="btn-done" class="done-btn">
+Close
+</button>
+
+</div>
+
+</div>
+
+</main>
+
+</div>
+
+<script src="js/app.js" defer></script>
+
+</body>
+</html> -->
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SafeNet</title>
+
+<link rel="stylesheet" href="css/styles.css">
+
+</head>
+<body>
+
+<div class="app-container">
+
+<header class="header">
+<div class="title">SafeNet</div>
+
+<div id="network-badge" class="network-badge">
+<div class="status-dot"></div>
+<span id="network-text">Online</span>
+</div>
+
+</header>
+
+
+<main class="view-container">
+
+<div id="layer-sos" class="view-layer active">
+
+<div class="sos-wrapper">
+<div class="pulse-ring"></div>
+<div class="pulse-ring"></div>
+
+<button id="btn-trigger-sos" class="sos-btn">
+SOS
+</button>
+
+</div>
+
+</div>
+
+
+
+<div id="layer-form" class="view-layer">
+
+<div class="form-panel">
+
+<div id="form-prompt" class="prompt-text">
+Select Emergency Type
+</div>
+
+<div class="emergency-types">
+
+<button class="type-btn" data-type="Medical">
+⚕️ Medical
+</button>
+
+<button class="type-btn" data-type="Fire">
+🔥 Fire
+</button>
+
+<button class="type-btn" data-type="Accident">
+🚗 Accident
+</button>
+
+<button class="type-btn" data-type="Crime">
+🛡️ Crime
+</button>
+
+</div>
+
+<div class="photo-section" style="margin: 15px 0;">
+    <label for="incident-photo" class="photo-btn" style="display: block; padding: 12px; background: rgba(255,255,255,0.1); border: 1px dashed rgba(255,255,255,0.4); border-radius: 8px; color: white; cursor: pointer; text-align: center;">
+        📷 Take Photo of Incident
+    </label>
+    <input type="file" id="incident-photo" accept="image/*" capture="environment" style="display: none;">
+    
+    <div id="photo-preview-container" style="display: none; margin-top: 10px; position: relative;">
+        <img id="photo-preview" style="max-width: 100%; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2);" />
+        <button id="btn-remove-photo" style="position: absolute; top: 5px; right: 5px; background: #ff3b30; color: white; border: none; border-radius: 50%; width: 25px; height: 25px; cursor: pointer;">✕</button>
+    </div>
+</div>
+<textarea
+id="incident-desc"
+class="textarea-glass"
+placeholder="Add emergency details..."
+></textarea>
+
+<button id="btn-dispatch" class="dispatch-btn">
+Dispatch Alert
+</button>
+
+</div>
+
+<div style="display: flex; gap: 10px; margin-top: 10px;">
+    <button id="btn-skip" class="cancel-btn" style="flex: 1; background: rgba(56, 189, 248, 0.2); color: #38bdf8;">Skip / I'm Safe</button>
+    <button id="btn-cancel" class="cancel-btn" style="flex: 1;">Cancel</button>
+</div>
+
+</div>
+
+
+
+<div id="layer-details" class="view-layer">
+
+<div class="info-panel">
+
+<div class="status-header">
+
+<div id="loading-spinner" class="spinner"></div>
+
+<span id="status-title">
+Acquiring Location...
+</span>
+
+</div>
+
+<div class="data-row">
+<span class="data-label">Emergency</span>
+<span id="val-type" class="data-value">--</span>
+</div>
+
+<div class="data-row">
+<span class="data-label">Timestamp</span>
+<span id="val-time" class="data-value">--</span>
+</div>
+
+<div class="data-row">
+<span class="data-label">Latitude</span>
+<span id="val-lat" class="data-value">--</span>
+</div>
+
+<div class="data-row">
+<span class="data-label">Longitude</span>
+<span id="val-lng" class="data-value">--</span>
+</div>
+
+<div id="offline-warning" class="offline-warning">
+Network offline. Alert saved locally.
+</div>
+
+<button id="btn-done" class="done-btn">
+Close
+</button>
+
+</div>
+
+</div>
+
+</main>
+
+</div>
+
+<script src="js/app.js" defer></script>
+
+</body>
+</html>

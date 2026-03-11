@@ -1,0 +1,915 @@
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexus: Hybrid Command Center</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+    <style>
+        :root {
+            --bg-color: #040814;
+            --panel-bg: rgba(10, 15, 30, 0.75);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --text-primary: #f8fafc;
+            --text-secondary: #8b9bb4;
+            --accent-glow: rgba(56, 189, 248, 0.5);
+            
+            --color-fire: #ff3b30;
+            --color-police: #007aff;
+            --color-medical: #34c759;
+            --color-critical: #ff2d55;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: radial-gradient(circle at 50% 50%, rgba(10, 20, 40, 1) 0%, rgba(4, 8, 20, 1) 100%);
+            color: var(--text-primary);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Glassmorphism */
+        .glass {
+            background: var(--panel-bg);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+        }
+
+        /* --- Header --- */
+        .header { display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.5rem; margin: 1rem; flex-shrink: 0; z-index: 1000; }
+        .header-title { display: flex; align-items: center; gap: 12px; font-size: 1.25rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;}
+        .header-title i { color: #38bdf8; font-size: 1.5rem; text-shadow: 0 0 15px var(--accent-glow); }
+        .header-controls { display: flex; align-items: center; gap: 20px; }
+        .clock { font-family: 'JetBrains Mono', monospace; font-size: 1rem; color: #38bdf8; text-shadow: 0 0 10px rgba(56,189,248,0.4); }
+        
+        /* Connection Status */
+        .connection-status { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; font-weight: 600; padding: 6px 12px; background: rgba(0,0,0,0.3); border-radius: 20px; transition: 0.3s; }
+        .status-indicator { width: 8px; height: 8px; border-radius: 50%; background-color: var(--color-fire); box-shadow: 0 0 10px var(--color-fire); transition: 0.3s; }
+        .status-indicator.connected { background-color: var(--color-medical); box-shadow: 0 0 10px var(--color-medical); }
+
+        /* --- Layout --- */
+        .dashboard-main {
+            display: grid; grid-template-columns: 340px 1fr 380px; gap: 1.25rem;
+            padding: 0 1rem 1rem 1rem; height: calc(100vh - 90px);
+        }
+
+        /* --- Left Panel --- */
+        .analytics-panel { display: flex; flex-direction: column; gap: 1rem; overflow-y: auto; }
+        .analytics-panel::-webkit-scrollbar { display: none; }
+        .stat-card { padding: 1.25rem; display: flex; align-items: center; gap: 1rem; position: relative; overflow: hidden; }
+        .stat-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); }
+        .stat-info h3 { font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+        .stat-info .stat-value { font-size: 1.75rem; font-weight: 700; font-family: 'JetBrains Mono', monospace;}
+
+        .chart-container { padding: 1.5rem; flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;}
+        .chart-container h3 { font-size: 0.85rem; color: var(--text-secondary); text-transform: uppercase; width: 100%; margin-bottom: 1.5rem; text-align: left; letter-spacing: 1px; }
+
+        .filters { display: flex; gap: 8px; padding: 1rem; flex-wrap: wrap; }
+        .filter-btn { flex: 1; padding: 10px; background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); color: var(--text-secondary); border-radius: 8px; cursor: pointer; font-size: 0.8rem; font-weight: 600; transition: all 0.2s; }
+        .filter-btn:hover { background: rgba(255,255,255,0.08); }
+        .filter-btn.active[data-type="All"] { background: rgba(255,255,255,0.15); color: white; border-color: rgba(255,255,255,0.3); }
+        .filter-btn.active[data-type="Fire"] { background: rgba(255,59,48,0.15); color: var(--color-fire); border-color: var(--color-fire); }
+        .filter-btn.active[data-type="Police"] { background: rgba(0,122,255,0.15); color: var(--color-police); border-color: var(--color-police); }
+        .filter-btn.active[data-type="Medical"] { background: rgba(52,199,89,0.15); color: var(--color-medical); border-color: var(--color-medical); }
+
+        /* --- Center Panel (Hybrid System) --- */
+        .center-wrapper { position: relative; border-radius: 16px; overflow: hidden; border: 1px solid var(--border-color); background: #000; box-shadow: inset 0 0 100px rgba(0,0,0,0.8); display: flex;}
+        
+        .view-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transition: opacity 0.5s ease, transform 0.5s ease; opacity: 0; pointer-events: none; z-index: 1;}
+        .view-layer.active { opacity: 1; pointer-events: auto; z-index: 2;}
+
+        /* Globe Layer */
+        #globeViz { width: 100%; height: 100%; cursor: grab; }
+        #globeViz:active { cursor: grabbing; }
+        
+        /* Map Layer */
+        #mapViz { width: 100%; height: 100%; background: #0b1120; }
+        .dark-tiles { filter: invert(100%) hue-rotate(180deg) brightness(85%) contrast(110%); }
+
+        /* Overlays in Center Panel */
+        .view-controls { position: absolute; top: 1.5rem; right: 1.5rem; z-index: 10; display: flex; gap: 8px; background: rgba(0,0,0,0.5); padding: 6px; border-radius: 10px; border: 1px solid var(--border-color); backdrop-filter: blur(10px);}
+        .view-btn { padding: 8px 12px; background: transparent; border: none; color: var(--text-secondary); border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-weight: 600; display: flex; align-items: center; gap: 6px; transition: 0.2s;}
+        .view-btn:hover { color: white; }
+        .view-btn.active { background: rgba(56, 189, 248, 0.2); color: #38bdf8; }
+
+        .globe-overlay-text { position: absolute; top: 1.5rem; left: 1.5rem; pointer-events: none; z-index: 10; }
+        .globe-overlay-text h2 { font-size: 1rem; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: rgba(255,255,255,0.9); text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
+        .globe-overlay-text p { font-size: 0.75rem; color: #38bdf8; font-family: 'JetBrains Mono', monospace; margin-top: 4px; text-shadow: 0 1px 2px rgba(0,0,0,0.8); }
+
+        /* --- Right Panel: Feed --- */
+        .feed-container { display: flex; flex-direction: column; overflow: hidden; }
+        .feed-header { padding: 1.25rem; border-bottom: 1px solid var(--border-color); font-weight: 600; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; background: rgba(0,0,0,0.2);}
+        .feed-list { flex: 1; overflow-y: auto; padding: 1rem; display: flex; flex-direction: column; gap: 1rem; }
+        .feed-list::-webkit-scrollbar { width: 4px; }
+        .feed-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 10px; }
+
+        .alert-card {
+            background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px; padding: 1.25rem; cursor: pointer; position: relative; overflow: hidden;
+            animation: slideInRight 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; transition: all 0.2s ease;
+        }
+        .alert-card:hover { background: rgba(255, 255, 255, 0.06); transform: translateX(-4px); box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        
+        .alert-card.severity-Critical { border-left: 4px solid var(--color-critical); background: linear-gradient(90deg, rgba(255, 45, 85, 0.08) 0%, transparent 100%);}
+        .alert-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
+        .badge { padding: 4px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; display: flex; gap: 6px; align-items: center; }
+        .alert-time { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--text-secondary); }
+        .alert-desc { font-size: 0.85rem; line-height: 1.5; margin-bottom: 1rem; color: #e2e8f0; }
+        .alert-footer { display: flex; justify-content: space-between; align-items: center; font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--text-secondary); padding-top: 0.75rem; border-top: 1px solid rgba(255,255,255,0.05); }
+        
+        .severity-badge { padding: 3px 8px; border-radius: 4px; font-weight: 600; letter-spacing: 0.5px; }
+        .sev-Critical { background: rgba(255,45,85,0.15); color: #ff375f; }
+        .sev-High { background: rgba(255,149,0,0.15); color: #ff9f0a; }
+        .sev-Medium { background: rgba(52,199,89,0.15); color: #32d74b; }
+
+        /* Leaflet Specific overrides */
+        .animated-marker { width: 24px; height: 24px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 15px currentColor; display: flex; align-items: center; justify-content: center; background-color: var(--panel-bg); }
+        .animated-marker i { font-size: 10px; }
+        .pulse-critical { animation: pulse-red 1.5s infinite !important; border-color: var(--color-critical); color: var(--color-critical) !important;}
+        .leaflet-popup-content-wrapper { background: rgba(10, 15, 30, 0.95) !important; color: var(--text-primary) !important; border: 1px solid var(--border-color); }
+        .leaflet-popup-tip { background: rgba(10, 15, 30, 0.95) !important; }
+
+        @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(255, 45, 85, 0.7); } 70% { box-shadow: 0 0 0 15px rgba(255, 45, 85, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 45, 85, 0); } }
+        @keyframes slideInRight { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+
+        /* Utilities */
+        .bg-fire { background-color: rgba(255,59,48,0.1); color: var(--color-fire); border-color: rgba(255,59,48,0.2); }
+        .bg-police { background-color: rgba(0,122,255,0.1); color: var(--color-police); border-color: rgba(0,122,255,0.2); }
+        .bg-medical { background-color: rgba(52,199,89,0.1); color: var(--color-medical); border-color: rgba(52,199,89,0.2); }
+    </style>
+</head>
+<body>
+
+    <header class="header glass">
+        <div class="header-title"><i class="fa-solid fa-earth-americas"></i> Nexus Command</div>
+        <div class="header-controls">
+            <div class="connection-status">
+                <div class="status-indicator" id="conn-indicator"></div><span id="conn-text">Connecting...</span>
+            </div>
+            <div class="clock" id="clock">00:00:00</div>
+        </div>
+    </header>
+
+    <main class="dashboard-main">
+        <section class="analytics-panel">
+            <div class="stat-card glass">
+                <div class="stat-icon" style="color: #f8fafc;"><i class="fa-solid fa-tower-broadcast"></i></div>
+                <div class="stat-info"><h3>Total Incidents</h3><div class="stat-value" id="stat-total">0</div></div>
+            </div>
+            <div class="stat-card glass" style="border-left: 3px solid var(--color-critical);">
+                <div class="stat-icon" style="color: var(--color-critical);"><i class="fa-solid fa-radiation"></i></div>
+                <div class="stat-info"><h3>Critical Threats</h3><div class="stat-value" id="stat-critical" style="color: var(--color-critical);">0</div></div>
+            </div>
+
+            <div class="filters glass" id="filters">
+                <button class="filter-btn active" data-type="All">All</button>
+                <button class="filter-btn" data-type="Fire"><i class="fa-solid fa-fire"></i> Fire</button>
+                <button class="filter-btn" data-type="Police"><i class="fa-solid fa-shield-halved"></i> Police</button>
+                <button class="filter-btn" data-type="Medical"><i class="fa-solid fa-heart-pulse"></i> EMS</button>
+            </div>
+
+            <div class="chart-container glass">
+                <h3>Incident Distribution</h3><canvas id="typeChart"></canvas>
+            </div>
+        </section>
+
+        <section class="center-wrapper glass" id="center-container">
+            
+            <div class="globe-overlay-text">
+                <h2 id="view-title">Orbital View</h2>
+                <p id="view-subtitle">Global Tracking Active</p>
+            </div>
+
+            <div class="view-controls">
+                <button class="view-btn active" id="btn-globe" onclick="switchView('globe')"><i class="fa-solid fa-globe"></i> Orbit</button>
+                <button class="view-btn" id="btn-map" onclick="switchView('map')"><i class="fa-solid fa-map-location-dot"></i> Tactical</button>
+            </div>
+
+            <div class="view-layer active" id="layer-globe">
+                <div id="globeViz"></div>
+            </div>
+
+            <div class="view-layer" id="layer-map">
+                <div id="mapViz"></div>
+            </div>
+
+        </section>
+
+        <aside class="feed-container glass">
+            <div class="feed-header"><span><i class="fa-solid fa-stream"></i> Intelligence Feed</span></div>
+            <div class="feed-list" id="alert-feed"></div>
+        </aside>
+
+    </main>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/three"></script>
+    <script src="https://unpkg.com/globe.gl"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            setInterval(() => { document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-US', { hour12: false }); }, 1000);
+
+            const state = {
+                alerts: [], currentFilter: 'All', viewMode: 'globe',
+                counts: { total: 0, critical: 0, fire: 0, police: 0, medical: 0 },
+                leafletMarkers: new Map()
+            };
+
+            const ctx = document.getElementById('typeChart').getContext('2d');
+            const typeChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: { labels: ['Fire', 'Police', 'Medical'], datasets: [{ data: [0, 0, 0], backgroundColor: ['#ff3b30', '#007aff', '#34c759'], borderWidth: 0 }] },
+                options: { responsive: true, cutout: '75%', plugins: { legend: { position: 'bottom', labels: { color: '#8b9bb4', usePointStyle: true, font: {family: 'Inter'} } } } }
+            });
+
+            const tacticalMap = L.map('mapViz', { zoomControl: false }).setView([20.5937, 78.9629], 5);
+            L.control.zoom({ position: 'bottomright' }).addTo(tacticalMap);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { className: 'dark-tiles', maxZoom: 19 }).addTo(tacticalMap);
+
+            const globeContainer = document.getElementById('layer-globe');
+            const globe = Globe()(document.getElementById('globeViz'))
+                .globeImageUrl('https://unpkg.com/three-globe/example/img/earth-night.jpg') 
+                .bumpImageUrl('https://unpkg.com/three-globe/example/img/earth-topology.png')
+                .backgroundColor('rgba(0,0,0,0)') .showAtmosphere(true) .atmosphereColor('#38bdf8') .atmosphereAltitude(0.15)
+                .width(globeContainer.offsetWidth) .height(globeContainer.offsetHeight)
+                .pointOfView({ lat: 20.5937, lng: 78.9629, altitude: 2 })
+                .ringColor('color').ringMaxRadius('maxR').ringPropagationSpeed('speed').ringRepeatPeriod('repeat')
+                .labelLat('lat').labelLng('lng').labelText('type').labelSize(1.5).labelDotRadius(0.5).labelColor(() => 'rgba(255, 255, 255, 0.9)');
+
+            globe.controls().autoRotate = true; globe.controls().autoRotateSpeed = 0.5;
+
+            window.addEventListener('resize', () => {
+                globe.width(globeContainer.offsetWidth).height(globeContainer.offsetHeight);
+                tacticalMap.invalidateSize();
+            });
+
+            window.switchView = function(mode) {
+                state.viewMode = mode;
+                
+                document.getElementById('btn-globe').classList.toggle('active', mode === 'globe');
+                document.getElementById('btn-map').classList.toggle('active', mode === 'map');
+                
+                document.getElementById('layer-globe').classList.toggle('active', mode === 'globe');
+                document.getElementById('layer-map').classList.toggle('active', mode === 'map');
+
+                document.getElementById('view-title').innerText = mode === 'globe' ? 'Orbital View' : 'Tactical Street Map';
+                document.getElementById('view-subtitle').innerText = mode === 'globe' ? 'Global Tracking Active' : 'High-Resolution Surface Scan';
+
+                if(mode === 'map') {
+                    setTimeout(() => tacticalMap.invalidateSize(), 100);
+                }
+            };
+
+            const getConfig = (type) => {
+                const t = (type || "").toLowerCase();
+                if (t.includes('fire')) return { type: 'Fire', class: 'bg-fire', hex: '#ff3b30', icon: 'fa-fire' };
+                if (t.includes('police') || t.includes('robbery') || t.includes('riot')) return { type: 'Police', class: 'bg-police', hex: '#007aff', icon: 'fa-shield-halved' };
+                return { type: 'Medical', class: 'bg-medical', hex: '#34c759', icon: 'fa-heart-pulse' };
+            };
+
+            function processAlert(rawAlert, isNew = false) {
+                const alert = {
+                    id: rawAlert.id || rawAlert._id || Math.random().toString(36).substr(2, 9),
+                    latitude: parseFloat(rawAlert.latitude) || 0,
+                    longitude: parseFloat(rawAlert.longitude) || 0,
+                    emergencyType: rawAlert.emergencyType || 'Unknown',
+                    severity: rawAlert.severity || 'Medium', 
+                    description: rawAlert.description || 'No description provided',
+                    timestamp: rawAlert.timestamp || new Date().toISOString(),
+                    image: rawAlert.image || null // ADDED IMAGE CATCHER
+                };
+
+                state.alerts.unshift(alert);
+                state.counts.total++;
+                if(alert.severity === 'Critical') state.counts.critical++;
+                
+                const config = getConfig(alert.emergencyType);
+                if(config.type === 'Fire') state.counts.fire++;
+                if(config.type === 'Police') state.counts.police++;
+                if(config.type === 'Medical') state.counts.medical++;
+
+                updateDashStats();
+                updateGlobeData();
+                addTacticalMarker(alert, config);
+                renderFeedCard(alert, isNew, config);
+
+                if(isNew && state.viewMode === 'map') {
+                    tacticalMap.setView([alert.latitude, alert.longitude], 14, { animate: true });
+                }
+            }
+
+            function updateDashStats() {
+                document.getElementById('stat-total').innerText = state.counts.total;
+                document.getElementById('stat-critical').innerText = state.counts.critical;
+                typeChart.data.datasets[0].data = [state.counts.fire, state.counts.police, state.counts.medical];
+                typeChart.update();
+            }
+
+            function updateGlobeData() {
+                const filtered = state.alerts.filter(a => state.currentFilter === 'All' || state.currentFilter === getConfig(a.emergencyType).type);
+                const ringData = filtered.map(a => {
+                    const c = getConfig(a.emergencyType);
+                    const isCrit = a.severity === 'Critical';
+                    return { lat: a.latitude, lng: a.longitude, type: a.emergencyType, color: t => `rgba(${hexToRgb(c.hex)}, ${1-t})`, maxR: isCrit ? 8 : 4, speed: isCrit ? 4 : 2, repeat: isCrit ? 400 : 800 };
+                });
+                globe.ringsData(ringData); globe.labelsData(ringData); 
+            }
+
+            function hexToRgb(hex) {
+                const r = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+                return r ? `${parseInt(r[1], 16)}, ${parseInt(r[2], 16)}, ${parseInt(r[3], 16)}` : '255,255,255';
+            }
+
+            function addTacticalMarker(alert, config) {
+                const isCrit = alert.severity === 'Critical';
+                const customIcon = L.divIcon({
+                    className: 'custom-leaflet-icon',
+                    html: `<div class="animated-marker ${isCrit ? 'pulse-critical' : ''}" style="color: ${config.hex}"><i class="fa-solid ${config.icon}"></i></div>`,
+                    iconSize: [24, 24], iconAnchor: [12, 12]
+                });
+                const marker = L.marker([alert.latitude, alert.longitude], { icon: customIcon }).addTo(tacticalMap);
+                
+                // ADDED IMAGE IN MAP POPUP
+                const popupImg = alert.image ? `<img src="${alert.image}" style="width:100%; border-radius:4px; margin-top:8px;">` : '';
+                
+                marker.bindPopup(`
+                    <div style="font-family:'Inter',sans-serif; width: 220px;">
+                        <h4 style="margin:0 0 5px 0"><i class="fa-solid ${config.icon}" style="color:${config.hex}"></i> ${alert.emergencyType}</h4>
+                        <span style="font-size:10px; padding:2px 6px; border-radius:4px; background:rgba(255,255,255,0.1);">${alert.severity}</span>
+                        ${popupImg}
+                        <p style="margin:8px 0 0 0; font-size:12px">${alert.description}</p>
+                    </div>
+                `);
+                state.leafletMarkers.set(alert.id, marker);
+            }
+
+            function renderFeedCard(alert, isNew, config) {
+                if (state.currentFilter !== 'All' && state.currentFilter !== config.type) return;
+
+                const isCrit = alert.severity === 'Critical';
+                const feed = document.getElementById('alert-feed');
+                const card = document.createElement('div');
+                card.className = `alert-card ${isCrit ? 'severity-Critical' : ''}`;
+                
+                // ADDED IMAGE IN FEED CARD
+                const imageHtml = alert.image ? `<img src="${alert.image}" style="width: 100%; max-height: 200px; object-fit: cover; border-radius: 8px; margin-bottom: 10px; border: 1px solid rgba(255,255,255,0.1);">` : '';
+                
+                card.innerHTML = `
+                    <div class="alert-header"><span class="badge ${config.class}"><i class="fa-solid ${config.icon}"></i> ${alert.emergencyType}</span>
+                    <span class="alert-time">${new Date(alert.timestamp).toLocaleTimeString()}</span></div>
+                    ${imageHtml}
+                    <div class="alert-desc">${alert.description}</div>
+                    <div class="alert-footer"><span><i class="fa-solid fa-satellite-dish"></i> ${alert.latitude.toFixed(4)}, ${alert.longitude.toFixed(4)}</span>
+                    <span class="severity-badge sev-${alert.severity}">${alert.severity}</span></div>
+                `;
+                
+                card.onclick = () => {
+                    switchView('map');
+                    tacticalMap.flyTo([alert.latitude, alert.longitude], 15, { animate: true, duration: 1.5 });
+                    setTimeout(() => { 
+                        const marker = state.leafletMarkers.get(alert.id);
+                        if(marker) marker.openPopup(); 
+                    }, 1500);
+                };
+
+                feed.prepend(card);
+            }
+
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                    e.target.classList.add('active');
+                    state.currentFilter = e.target.getAttribute('data-type');
+                    
+                    document.getElementById('alert-feed').innerHTML = '';
+                    state.leafletMarkers.forEach(m => tacticalMap.removeLayer(m));
+                    state.leafletMarkers.clear();
+
+                    [...state.alerts].reverse().forEach(alert => {
+                        const config = getConfig(alert.emergencyType);
+                        addTacticalMarker(alert, config);
+                        renderFeedCard(alert, false, config);
+                    });
+                    updateGlobeData();
+                    if(state.currentFilter === 'All') { globe.pointOfView({ altitude: 2 }, 2000); tacticalMap.setView([20.5937, 78.9629], 5); }
+                });
+            });
+
+            const socket = io("http://localhost:5001");
+
+            socket.on('connect', () => {
+                document.getElementById('conn-indicator').classList.add('connected'); 
+                document.getElementById('conn-text').innerText = 'Connected';
+            });
+
+            socket.on('disconnect', () => {
+                document.getElementById('conn-indicator').classList.remove('connected'); 
+                document.getElementById('conn-text').innerText = 'Offline';
+            });
+
+            socket.on("initialData", (data) => {
+                data.forEach(item => processAlert(item, false));
+            });
+
+            socket.on("newEmergency", (data) => {
+                console.log("Emergency received:", data);
+                processAlert(data, true);
+            });
+
+        });
+    </script>
+</body>
+</html>
+ -->
+
+
+ <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexus: Hybrid Command Center</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+    <style>
+        :root {
+            --bg-color: #040814;
+            --panel-bg: rgba(10, 15, 30, 0.75);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --text-primary: #f8fafc;
+            --text-secondary: #8b9bb4;
+            --accent-glow: rgba(56, 189, 248, 0.5);
+            
+            --color-fire: #ff3b30;
+            --color-police: #007aff;
+            --color-medical: #34c759;
+            --color-critical: #ff2d55;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: radial-gradient(circle at 50% 50%, rgba(10, 20, 40, 1) 0%, rgba(4, 8, 20, 1) 100%);
+            color: var(--text-primary);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .glass {
+            background: var(--panel-bg);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+        }
+
+        .header { display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.5rem; margin: 1rem; flex-shrink: 0; z-index: 1000; }
+        .header-title { display: flex; align-items: center; gap: 12px; font-size: 1.25rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;}
+        .header-title i { color: #38bdf8; font-size: 1.5rem; text-shadow: 0 0 15px var(--accent-glow); }
+        .header-controls { display: flex; align-items: center; gap: 20px; }
+        .clock { font-family: 'JetBrains Mono', monospace; font-size: 1rem; color: #38bdf8; text-shadow: 0 0 10px rgba(56,189,248,0.4); }
+        
+        .connection-status { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; font-weight: 600; padding: 6px 12px; background: rgba(0,0,0,0.3); border-radius: 20px; transition: 0.3s; }
+        .status-indicator { width: 8px; height: 8px; border-radius: 50%; background-color: var(--color-fire); box-shadow: 0 0 10px var(--color-fire); transition: 0.3s; }
+        .status-indicator.connected { background-color: var(--color-medical); box-shadow: 0 0 10px var(--color-medical); }
+
+        .dashboard-main {
+            display: grid; grid-template-columns: 340px 1fr 380px; gap: 1.25rem;
+            padding: 0 1rem 1rem 1rem; height: calc(100vh - 90px);
+        }
+
+        .analytics-panel { display: flex; flex-direction: column; gap: 1rem; overflow-y: auto; }
+        .analytics-panel::-webkit-scrollbar { display: none; }
+        .stat-card { padding: 1.25rem; display: flex; align-items: center; gap: 1rem; position: relative; overflow: hidden; }
+        .stat-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); }
+        .stat-info h3 { font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+        .stat-info .stat-value { font-size: 1.75rem; font-weight: 700; font-family: 'JetBrains Mono', monospace;}
+
+        .chart-container { padding: 1.5rem; flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;}
+        .chart-container h3 { font-size: 0.85rem; color: var(--text-secondary); text-transform: uppercase; width: 100%; margin-bottom: 1.5rem; text-align: left; letter-spacing: 1px; }
+
+        .filters { display: flex; gap: 8px; padding: 1rem; flex-wrap: wrap; }
+        .filter-btn { flex: 1; padding: 10px; background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); color: var(--text-secondary); border-radius: 8px; cursor: pointer; font-size: 0.8rem; font-weight: 600; transition: all 0.2s; }
+        .filter-btn:hover { background: rgba(255,255,255,0.08); }
+        .filter-btn.active[data-type="All"] { background: rgba(255,255,255,0.15); color: white; border-color: rgba(255,255,255,0.3); }
+        .filter-btn.active[data-type="Fire"] { background: rgba(255,59,48,0.15); color: var(--color-fire); border-color: var(--color-fire); }
+        .filter-btn.active[data-type="Police"] { background: rgba(0,122,255,0.15); color: var(--color-police); border-color: var(--color-police); }
+        .filter-btn.active[data-type="Medical"] { background: rgba(52,199,89,0.15); color: var(--color-medical); border-color: var(--color-medical); }
+
+        .center-wrapper { position: relative; border-radius: 16px; overflow: hidden; border: 1px solid var(--border-color); background: #000; box-shadow: inset 0 0 100px rgba(0,0,0,0.8); display: flex;}
+        
+        .view-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transition: opacity 0.5s ease, transform 0.5s ease; opacity: 0; pointer-events: none; z-index: 1;}
+        .view-layer.active { opacity: 1; pointer-events: auto; z-index: 2;}
+
+        #globeViz { width: 100%; height: 100%; cursor: grab; }
+        #globeViz:active { cursor: grabbing; }
+        
+        #mapViz { width: 100%; height: 100%; background: #0b1120; }
+        .dark-tiles { filter: invert(100%) hue-rotate(180deg) brightness(85%) contrast(110%); }
+
+        .view-controls { position: absolute; top: 1.5rem; right: 1.5rem; z-index: 10; display: flex; gap: 8px; background: rgba(0,0,0,0.5); padding: 6px; border-radius: 10px; border: 1px solid var(--border-color); backdrop-filter: blur(10px);}
+        .view-btn { padding: 8px 12px; background: transparent; border: none; color: var(--text-secondary); border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-weight: 600; display: flex; align-items: center; gap: 6px; transition: 0.2s;}
+        .view-btn:hover { color: white; }
+        .view-btn.active { background: rgba(56, 189, 248, 0.2); color: #38bdf8; }
+
+        .globe-overlay-text { position: absolute; top: 1.5rem; left: 1.5rem; pointer-events: none; z-index: 10; }
+        .globe-overlay-text h2 { font-size: 1rem; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: rgba(255,255,255,0.9); text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
+        .globe-overlay-text p { font-size: 0.75rem; color: #38bdf8; font-family: 'JetBrains Mono', monospace; margin-top: 4px; text-shadow: 0 1px 2px rgba(0,0,0,0.8); }
+
+        .feed-container { display: flex; flex-direction: column; overflow: hidden; }
+        .feed-header { padding: 1.25rem; border-bottom: 1px solid var(--border-color); font-weight: 600; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; background: rgba(0,0,0,0.2);}
+        .feed-list { flex: 1; overflow-y: auto; padding: 1rem; display: flex; flex-direction: column; gap: 1rem; }
+        .feed-list::-webkit-scrollbar { width: 4px; }
+        .feed-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 10px; }
+
+        .alert-card {
+            background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px; padding: 1.25rem; cursor: pointer; position: relative; overflow: hidden;
+            animation: slideInRight 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; transition: all 0.2s ease;
+        }
+        .alert-card:hover { background: rgba(255, 255, 255, 0.06); transform: translateX(-4px); box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        
+        .alert-card.severity-Critical { border-left: 4px solid var(--color-critical); background: linear-gradient(90deg, rgba(255, 45, 85, 0.08) 0%, transparent 100%);}
+        .alert-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
+        .badge { padding: 4px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; display: flex; gap: 6px; align-items: center; }
+        .alert-time { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--text-secondary); }
+        .alert-desc { font-size: 0.85rem; line-height: 1.5; margin-bottom: 1rem; color: #e2e8f0; }
+        .alert-footer { display: flex; justify-content: space-between; align-items: center; font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--text-secondary); padding-top: 0.75rem; border-top: 1px solid rgba(255,255,255,0.05); }
+        
+        .severity-badge { padding: 3px 8px; border-radius: 4px; font-weight: 600; letter-spacing: 0.5px; }
+        .sev-Critical { background: rgba(255,45,85,0.15); color: #ff375f; }
+        .sev-High { background: rgba(255,149,0,0.15); color: #ff9f0a; }
+        .sev-Medium { background: rgba(52,199,89,0.15); color: #32d74b; }
+
+        .animated-marker { width: 24px; height: 24px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 15px currentColor; display: flex; align-items: center; justify-content: center; background-color: var(--panel-bg); }
+        .animated-marker i { font-size: 10px; }
+        .pulse-critical { animation: pulse-red 1.5s infinite !important; border-color: var(--color-critical); color: var(--color-critical) !important;}
+        .leaflet-popup-content-wrapper { background: rgba(10, 15, 30, 0.95) !important; color: var(--text-primary) !important; border: 1px solid var(--border-color); }
+        .leaflet-popup-tip { background: rgba(10, 15, 30, 0.95) !important; }
+
+        @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(255, 45, 85, 0.7); } 70% { box-shadow: 0 0 0 15px rgba(255, 45, 85, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 45, 85, 0); } }
+        @keyframes slideInRight { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+
+        .bg-fire { background-color: rgba(255,59,48,0.1); color: var(--color-fire); border-color: rgba(255,59,48,0.2); }
+        .bg-police { background-color: rgba(0,122,255,0.1); color: var(--color-police); border-color: rgba(0,122,255,0.2); }
+        .bg-medical { background-color: rgba(52,199,89,0.1); color: var(--color-medical); border-color: rgba(52,199,89,0.2); }
+    </style>
+</head>
+<body>
+
+    <header class="header glass">
+        <div class="header-title"><i class="fa-solid fa-earth-americas"></i> Nexus Command</div>
+        <div class="header-controls">
+            <div class="connection-status">
+                <div class="status-indicator" id="conn-indicator"></div><span id="conn-text">Connecting...</span>
+            </div>
+            <div class="clock" id="clock">00:00:00</div>
+        </div>
+    </header>
+
+    <main class="dashboard-main">
+        <section class="analytics-panel">
+            <div class="stat-card glass">
+                <div class="stat-icon" style="color: #f8fafc;"><i class="fa-solid fa-tower-broadcast"></i></div>
+                <div class="stat-info"><h3>Total Incidents</h3><div class="stat-value" id="stat-total">0</div></div>
+            </div>
+            <div class="stat-card glass" style="border-left: 3px solid var(--color-critical);">
+                <div class="stat-icon" style="color: var(--color-critical);"><i class="fa-solid fa-radiation"></i></div>
+                <div class="stat-info"><h3>Critical Threats</h3><div class="stat-value" id="stat-critical" style="color: var(--color-critical);">0</div></div>
+            </div>
+
+            <div class="filters glass" id="filters">
+                <button class="filter-btn active" data-type="All">All</button>
+                <button class="filter-btn" data-type="Fire"><i class="fa-solid fa-fire"></i> Fire</button>
+                <button class="filter-btn" data-type="Police"><i class="fa-solid fa-shield-halved"></i> Police</button>
+                <button class="filter-btn" data-type="Medical"><i class="fa-solid fa-heart-pulse"></i> EMS</button>
+            </div>
+
+            <div class="chart-container glass">
+                <h3>Incident Distribution</h3><canvas id="typeChart"></canvas>
+            </div>
+        </section>
+
+        <section class="center-wrapper glass" id="center-container">
+            
+            <div class="globe-overlay-text">
+                <h2 id="view-title">Orbital View</h2>
+                <p id="view-subtitle">Global Tracking Active</p>
+            </div>
+
+            <div class="view-controls">
+                <button class="view-btn active" id="btn-globe" onclick="switchView('globe')"><i class="fa-solid fa-globe"></i> Orbit</button>
+                <button class="view-btn" id="btn-map" onclick="switchView('map')"><i class="fa-solid fa-map-location-dot"></i> Tactical</button>
+            </div>
+
+            <div class="view-layer active" id="layer-globe">
+                <div id="globeViz"></div>
+            </div>
+
+            <div class="view-layer" id="layer-map">
+                <div id="mapViz"></div>
+            </div>
+
+        </section>
+
+        <aside class="feed-container glass">
+            <div class="feed-header"><span><i class="fa-solid fa-stream"></i> Intelligence Feed</span></div>
+            <div class="feed-list" id="alert-feed"></div>
+        </aside>
+
+    </main>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/three"></script>
+    <script src="https://unpkg.com/globe.gl"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            setInterval(() => { document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-US', { hour12: false }); }, 1000);
+
+            const state = {
+                alerts: [], currentFilter: 'All', viewMode: 'globe',
+                counts: { total: 0, critical: 0, fire: 0, police: 0, medical: 0 },
+                leafletMarkers: new Map()
+            };
+
+            const ctx = document.getElementById('typeChart').getContext('2d');
+            const typeChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: { labels: ['Fire', 'Police', 'Medical'], datasets: [{ data: [0, 0, 0], backgroundColor: ['#ff3b30', '#007aff', '#34c759'], borderWidth: 0 }] },
+                options: { responsive: true, cutout: '75%', plugins: { legend: { position: 'bottom', labels: { color: '#8b9bb4', usePointStyle: true, font: {family: 'Inter'} } } } }
+            });
+
+            const tacticalMap = L.map('mapViz', { zoomControl: false }).setView([20.5937, 78.9629], 5);
+            L.control.zoom({ position: 'bottomright' }).addTo(tacticalMap);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { className: 'dark-tiles', maxZoom: 19 }).addTo(tacticalMap);
+
+            const globeContainer = document.getElementById('layer-globe');
+            const globe = Globe()(document.getElementById('globeViz'))
+                .globeImageUrl('https://unpkg.com/three-globe/example/img/earth-night.jpg') 
+                .bumpImageUrl('https://unpkg.com/three-globe/example/img/earth-topology.png')
+                .backgroundColor('rgba(0,0,0,0)') .showAtmosphere(true) .atmosphereColor('#38bdf8') .atmosphereAltitude(0.15)
+                .width(globeContainer.offsetWidth) .height(globeContainer.offsetHeight)
+                .pointOfView({ lat: 20.5937, lng: 78.9629, altitude: 2 })
+                .ringColor('color').ringMaxRadius('maxR').ringPropagationSpeed('speed').ringRepeatPeriod('repeat')
+                .labelLat('lat').labelLng('lng').labelText('type').labelSize(1.5).labelDotRadius(0.5).labelColor(() => 'rgba(255, 255, 255, 0.9)');
+
+            globe.controls().autoRotate = true; globe.controls().autoRotateSpeed = 0.5;
+
+            window.addEventListener('resize', () => {
+                globe.width(globeContainer.offsetWidth).height(globeContainer.offsetHeight);
+                tacticalMap.invalidateSize();
+            });
+
+            window.switchView = function(mode) {
+                state.viewMode = mode;
+                
+                document.getElementById('btn-globe').classList.toggle('active', mode === 'globe');
+                document.getElementById('btn-map').classList.toggle('active', mode === 'map');
+                
+                document.getElementById('layer-globe').classList.toggle('active', mode === 'globe');
+                document.getElementById('layer-map').classList.toggle('active', mode === 'map');
+
+                document.getElementById('view-title').innerText = mode === 'globe' ? 'Orbital View' : 'Tactical Street Map';
+                document.getElementById('view-subtitle').innerText = mode === 'globe' ? 'Global Tracking Active' : 'High-Resolution Surface Scan';
+
+                if(mode === 'map') {
+                    setTimeout(() => tacticalMap.invalidateSize(), 100);
+                }
+            };
+
+            const getConfig = (type) => {
+                const t = (type || "").toLowerCase();
+                if (t.includes('fire')) return { type: 'Fire', class: 'bg-fire', hex: '#ff3b30', icon: 'fa-fire' };
+                if (t.includes('police') || t.includes('robbery') || t.includes('riot')) return { type: 'Police', class: 'bg-police', hex: '#007aff', icon: 'fa-shield-halved' };
+                if (t.includes('medical') || t.includes('accident')) return { type: 'Medical', class: 'bg-medical', hex: '#34c759', icon: 'fa-heart-pulse' };
+                // Default config for "General SOS"
+                return { type: 'All', class: 'bg-police', hex: '#ff9f0a', icon: 'fa-triangle-exclamation' };
+            };
+
+            function processAlert(rawAlert, isNew = false) {
+                const alert = {
+                    id: rawAlert.id || rawAlert._id || Math.random().toString(36).substr(2, 9),
+                    latitude: parseFloat(rawAlert.latitude) || 0,
+                    longitude: parseFloat(rawAlert.longitude) || 0,
+                    emergencyType: rawAlert.emergencyType || 'General SOS',
+                    severity: rawAlert.severity || 'Critical', 
+                    description: rawAlert.description || 'Automated SOS triggered.',
+                    timestamp: rawAlert.timestamp || new Date().toISOString(),
+                    image: rawAlert.image || null
+                };
+
+                // SMART UPDATE LOGIC (Prevents duplicates when user adds photo/details)
+                const existingIndex = state.alerts.findIndex(a => a.id === alert.id);
+                
+                if (existingIndex > -1) {
+                    const oldType = state.alerts[existingIndex].emergencyType;
+                    state.alerts[existingIndex] = alert;
+
+                    // Re-calculate stats for the pie chart
+                    const oldConfig = getConfig(oldType);
+                    const newConfig = getConfig(alert.emergencyType);
+                    
+                    if(oldConfig.type === 'Fire') state.counts.fire--;
+                    if(oldConfig.type === 'Police') state.counts.police--;
+                    if(oldConfig.type === 'Medical') state.counts.medical--;
+                    
+                    if(newConfig.type === 'Fire') state.counts.fire++;
+                    if(newConfig.type === 'Police') state.counts.police++;
+                    if(newConfig.type === 'Medical') state.counts.medical++;
+
+                    refreshDashboard(); // Redraw UI with updated data
+                    return; // Stop execution here for updates
+                }
+
+                // LOGIC FOR BRAND NEW ALERTS
+                state.alerts.unshift(alert);
+                state.counts.total++;
+                if(alert.severity === 'Critical') state.counts.critical++;
+                
+                const config = getConfig(alert.emergencyType);
+                if(config.type === 'Fire') state.counts.fire++;
+                if(config.type === 'Police') state.counts.police++;
+                if(config.type === 'Medical') state.counts.medical++;
+
+                updateDashStats();
+                updateGlobeData();
+                addTacticalMarker(alert, config);
+                renderFeedCard(alert, isNew, config);
+
+                if(isNew && state.viewMode === 'map') {
+                    tacticalMap.setView([alert.latitude, alert.longitude], 14, { animate: true });
+                }
+            }
+            
+            // Helper function to quickly redraw the dashboard when an alert is updated
+            function refreshDashboard() {
+                updateDashStats();
+                updateGlobeData();
+                document.getElementById('alert-feed').innerHTML = '';
+                state.leafletMarkers.forEach(m => tacticalMap.removeLayer(m));
+                state.leafletMarkers.clear();
+
+                [...state.alerts].reverse().forEach(a => {
+                    const c = getConfig(a.emergencyType);
+                    addTacticalMarker(a, c);
+                    renderFeedCard(a, false, c);
+                });
+            }
+
+            function updateDashStats() {
+                document.getElementById('stat-total').innerText = state.counts.total;
+                document.getElementById('stat-critical').innerText = state.counts.critical;
+                typeChart.data.datasets[0].data = [state.counts.fire, state.counts.police, state.counts.medical];
+                typeChart.update();
+            }
+
+            function updateGlobeData() {
+                const filtered = state.alerts.filter(a => state.currentFilter === 'All' || state.currentFilter === getConfig(a.emergencyType).type);
+                const ringData = filtered.map(a => {
+                    const c = getConfig(a.emergencyType);
+                    const isCrit = a.severity === 'Critical';
+                    return { lat: a.latitude, lng: a.longitude, type: a.emergencyType, color: t => `rgba(${hexToRgb(c.hex)}, ${1-t})`, maxR: isCrit ? 8 : 4, speed: isCrit ? 4 : 2, repeat: isCrit ? 400 : 800 };
+                });
+                globe.ringsData(ringData); globe.labelsData(ringData); 
+            }
+
+            function hexToRgb(hex) {
+                const r = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+                return r ? `${parseInt(r[1], 16)}, ${parseInt(r[2], 16)}, ${parseInt(r[3], 16)}` : '255,255,255';
+            }
+
+            function addTacticalMarker(alert, config) {
+                const isCrit = alert.severity === 'Critical';
+                const customIcon = L.divIcon({
+                    className: 'custom-leaflet-icon',
+                    html: `<div class="animated-marker ${isCrit ? 'pulse-critical' : ''}" style="color: ${config.hex}"><i class="fa-solid ${config.icon}"></i></div>`,
+                    iconSize: [24, 24], iconAnchor: [12, 12]
+                });
+                const marker = L.marker([alert.latitude, alert.longitude], { icon: customIcon }).addTo(tacticalMap);
+                
+                const popupImg = alert.image ? `<img src="${alert.image}" style="width:100%; border-radius:4px; margin-top:8px;">` : '';
+                
+                marker.bindPopup(`
+                    <div style="font-family:'Inter',sans-serif; width: 220px;">
+                        <h4 style="margin:0 0 5px 0"><i class="fa-solid ${config.icon}" style="color:${config.hex}"></i> ${alert.emergencyType}</h4>
+                        <span style="font-size:10px; padding:2px 6px; border-radius:4px; background:rgba(255,255,255,0.1);">${alert.severity}</span>
+                        ${popupImg}
+                        <p style="margin:8px 0 0 0; font-size:12px">${alert.description}</p>
+                    </div>
+                `);
+                state.leafletMarkers.set(alert.id, marker);
+            }
+
+            function renderFeedCard(alert, isNew, config) {
+                if (state.currentFilter !== 'All' && state.currentFilter !== config.type) return;
+
+                const isCrit = alert.severity === 'Critical';
+                const feed = document.getElementById('alert-feed');
+                const card = document.createElement('div');
+                card.className = `alert-card ${isCrit ? 'severity-Critical' : ''}`;
+                
+                const imageHtml = alert.image ? `<img src="${alert.image}" style="width: 100%; max-height: 200px; object-fit: cover; border-radius: 8px; margin-bottom: 10px; border: 1px solid rgba(255,255,255,0.1);">` : '';
+                
+                card.innerHTML = `
+                    <div class="alert-header"><span class="badge ${config.class}"><i class="fa-solid ${config.icon}"></i> ${alert.emergencyType}</span>
+                    <span class="alert-time">${new Date(alert.timestamp).toLocaleTimeString()}</span></div>
+                    ${imageHtml}
+                    <div class="alert-desc">${alert.description}</div>
+                    <div class="alert-footer"><span><i class="fa-solid fa-satellite-dish"></i> ${alert.latitude.toFixed(4)}, ${alert.longitude.toFixed(4)}</span>
+                    <span class="severity-badge sev-${alert.severity}">${alert.severity}</span></div>
+                `;
+                
+                card.onclick = () => {
+                    switchView('map');
+                    tacticalMap.flyTo([alert.latitude, alert.longitude], 15, { animate: true, duration: 1.5 });
+                    setTimeout(() => { 
+                        const marker = state.leafletMarkers.get(alert.id);
+                        if(marker) marker.openPopup(); 
+                    }, 1500);
+                };
+
+                feed.prepend(card);
+            }
+
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                    e.target.classList.add('active');
+                    state.currentFilter = e.target.getAttribute('data-type');
+                    
+                    document.getElementById('alert-feed').innerHTML = '';
+                    state.leafletMarkers.forEach(m => tacticalMap.removeLayer(m));
+                    state.leafletMarkers.clear();
+
+                    [...state.alerts].reverse().forEach(alert => {
+                        const config = getConfig(alert.emergencyType);
+                        addTacticalMarker(alert, config);
+                        renderFeedCard(alert, false, config);
+                    });
+                    updateGlobeData();
+                    if(state.currentFilter === 'All') { globe.pointOfView({ altitude: 2 }, 2000); tacticalMap.setView([20.5937, 78.9629], 5); }
+                });
+            });
+
+            //const socket = io("http://172.20.10.4:5001");
+//             const socket = io("https://unstacked-malisa-unbellicose.ngrok-free.dev", {
+//     transports: ["websocket", "polling"], // Added for mobile connection stability
+//     secure: true
+// });
+
+// const socket = io("https://colours-located-anderson-black.trycloudflare.com", {
+//     transports: ["websocket", "polling"], 
+//     secure: true
+// });
+
+// CHANGE THIS BACK:
+const socket = io("http://localhost:5001");
+            socket.on('connect', () => {
+                document.getElementById('conn-indicator').classList.add('connected'); 
+                document.getElementById('conn-text').innerText = 'Connected';
+            });
+
+            socket.on('disconnect', () => {
+                document.getElementById('conn-indicator').classList.remove('connected'); 
+                document.getElementById('conn-text').innerText = 'Offline';
+            });
+
+            socket.on("initialData", (data) => {
+                data.forEach(item => processAlert(item, false));
+            });
+
+            socket.on("newEmergency", (data) => {
+                console.log("Emergency received:", data);
+                processAlert(data, true);
+            });
+
+        });
+    </script>
+</body>
+</html>
