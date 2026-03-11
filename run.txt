@@ -6,6 +6,7 @@ run "node backend/server.js"
 then in a new terminal  do
 "ngrok http 5500" in mac terminal 
 this is for index.html..... paste the link generated in the phone safari 
+also click share and put in home pg
 
 then in vs code terminal run
 "npx cloudflared tunnel --url http://localhost:5001"
