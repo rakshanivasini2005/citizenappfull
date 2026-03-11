@@ -6,12 +6,16 @@ run "node backend/server.js"
 then in a new terminal  do
 "ngrok http 5500" in mac terminal 
 this is for index.html..... paste the link generated in the phone safari 
+during typing , the link is https://unstacked-malisa-unbellicose.ngrok-free.dev
+link doesnt xhange upto my knowledge
 also click share and put in home pg
 
 then in vs code terminal run
 "npx cloudflared tunnel --url http://localhost:5001"
 this is for dashboard.html
 there will be a link generated
+huring typing, the link is https://letting-mai-closes-tom.trycloudflare.com
+it keeps changing fs
 copy that and change it in app.js in fetch() functions like
     fetch("https://letting-mai-closes-tom.trycloudflare.com/emergency", {
 

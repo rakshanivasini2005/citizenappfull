@@ -439,7 +439,7 @@ btnTriggerSos.onclick = async () => {
     // fetch("http://172.20.10.4:5001/emergency", {
     // fetch("https://unstacked-malisa-unbellicose.ngrok-free.dev:5001/emergency", { 
     // fetch("https://colours-located-anderson-black.trycloudflare.com/emergency", {   
-    fetch("https://letting-mai-closes-tom.trycloudflare.com/emergency", {
+    fetch("https://fortune-boards-volunteer-charge.trycloudflare.com/emergency", {
         method:"POST",
         headers:{"Content-Type":"application/json"},
         body:JSON.stringify(initialAlert)
@@ -497,7 +497,7 @@ btnDispatch.onclick = async () => {
     // fetch("http://localhost:5001/emergency", {
     // fetch("http://172.20.10.4:5001/emergency", {
     // fetch("https://colours-located-anderson-black.trycloudflare.com/emergency", {
-        fetch("https://letting-mai-closes-tom.trycloudflare.com/emergency", {
+        fetch("https://fortune-boards-volunteer-charge.trycloudflare.com/emergency", {
 
         method:"POST",
         headers:{"Content-Type":"application/json"},
@@ -593,7 +593,7 @@ function sendStoredEmergencies(){
         //fetch("http://172.20.10.4:5001/emergency", {
         // fetch("https://unstacked-malisa-unbellicose.ngrok-free.dev:5001/emergency", {
             // fetch("https://colours-located-anderson-black.trycloudflare.com/emergency", {
-                fetch("https://letting-mai-closes-tom.trycloudflare.com/emergency", {
+                fetch("https://fortune-boards-volunteer-charge.trycloudflare.com/emergency", {
             method:"POST",
             headers:{"Content-Type":"application/json"},
             body:JSON.stringify(emergency)
