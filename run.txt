@@ -1,0 +1,17 @@
+open vs code
+open terminal
+run "node backend/server.js"
+
+
+then in a new terminal  do
+"ngrok http 5500" in mac terminal 
+this is for index.html..... paste the link generated in the phone safari 
+
+then in vs code terminal run
+"npx cloudflared tunnel --url http://localhost:5001"
+this is for dashboard.html
+there will be a link generated
+copy that and change it in app.js in fetch() functions like
+    fetch("https://letting-mai-closes-tom.trycloudflare.com/emergency", {
+
+
