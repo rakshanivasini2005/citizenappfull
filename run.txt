@@ -1,3 +1,5 @@
+this is the one with phone app
+
 open vs code
 open terminal
 run "node backend/server.js"
